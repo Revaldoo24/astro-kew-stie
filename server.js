@@ -1,30 +1,25 @@
 import express from 'express';
-import { handler as ssrHandler } from './dist/server/entry.mjs';
 
-const PORT = 30069
+// Situs ini sudah dihentikan permanen.
+//
+// Seluruh path merespons HTTP 410 Gone — sinyal ke mesin pencari bahwa
+// halaman dihapus permanen dan boleh dibuang dari indeks.
+//
+// Padanan dari konfigurasi Apache:
+//   RewriteEngine On
+//   RewriteRule ^(.*)$ - [G,L]
+//
+// Catatan: 410 diterapkan ke SEMUA path, termasuk /robots.txt dan
+// /sitemap.xml, sesuai permintaan.
+
+const PORT = process.env.PORT || 30069;
 
 const app = express();
-// Change this based on your astro.config.mjs, `base` option.
-// They should match. The default value is "/".
-const base = '/';
 
-
-app.use(base, express.static('dist/client/'));
-app.use(ssrHandler);
-
-// Middleware untuk menangani 404
 app.use((req, res) => {
-  res.status(404).redirect('/404');
-});
-
-// Middleware untuk menangani error
-app.use((err, req, res, next) => {
-  // console.error('Error:', err);
-  res.status(500).redirect('/500');
+  res.status(410).type('text/plain').send('410 Gone');
 });
 
 app.listen(PORT, () => {
-    console.log("App Started on port", PORT)
+  console.log('410 Gone server started on port', PORT);
 });
-
-

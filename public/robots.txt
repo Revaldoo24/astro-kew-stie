@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://kew.stiestekom.ac.id/sitemap.xml
