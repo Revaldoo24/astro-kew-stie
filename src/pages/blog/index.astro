@@ -3,6 +3,7 @@ import Layout from "@layouts/Layout.astro";
 import Breadcrumb from "@components/Breadcrumb.astro";
 import { websiteInfo } from "@globals/info";
 import { BlogApi } from "@/services/blogApi";
+import { slugify } from "@/utils/slug";
 import PaginationContent from "@components/content/PaginationContent.astro";
 import BrochureRequestForm from "@components/blog/BrochureRequestForm.astro";
 
@@ -35,6 +36,14 @@ const totalPosts = projectsResponse?.total || 0;
 // Fetch categories
 const categoriesResponse = await blogApi.fetchCategories();
 const categories = categoriesResponse?.data || [];
+
+// Daftar project untuk hub page. Paginasi blog hanya menjangkau 1 project
+// (~590 artikel), sedangkan sitemap memuat puluhan ribu URL. Menaut hub page
+// tiap project di sini memberi jalur internal link ke seluruh artikel.
+const allProjects = (await blogApi.fetchAllProjects()) || [];
+const projectLinks = allProjects
+    .map((project) => ({ name: project.name, slug: slugify(project.name) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
 // Prepare pagination data
 const paginationData = {
@@ -336,6 +345,29 @@ const paginationData = {
                                     )}
                                 </div>
                             </div>
+
+                            <!-- Koleksi Artikel (hub page per project) -->
+                            {projectLinks.length > 0 && (
+                                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200 dark:border-gray-700 overflow-hidden mt-6">
+                                    <div class="bg-slate-800 p-4">
+                                        <h3 class="text-lg font-bold text-white">
+                                            Koleksi Artikel
+                                        </h3>
+                                    </div>
+                                    <div class="p-4">
+                                        <div class="space-y-1">
+                                            {projectLinks.map((project) => (
+                                                <a
+                                                    href={`/blog/koleksi/${project.slug}`}
+                                                    class="block px-4 py-2.5 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-white transition-colors"
+                                                >
+                                                    {project.name}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </aside>
                 </div>

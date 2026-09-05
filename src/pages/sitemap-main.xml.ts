@@ -1,6 +1,7 @@
 import { BlogApi } from "@/services/blogApi";
 import type { APIRoute } from "astro";
 import { readSitemapCache, saveSitemapCache } from "@/utils/sitemapCache";
+import { slugify } from "@/utils/slug";
 
 const CACHE_KEY = "sitemap-main";
 
@@ -10,6 +11,10 @@ export const GET: APIRoute = async () => {
     // Fetch all categories
     const categoriesResponse = await blogApi.fetchCategories();
     const categories = categoriesResponse?.data || [];
+
+    // Hub page per project: memberi jalur internal link ke seluruh artikel
+    // yang sebelumnya orphan (paginasi blog hanya menjangkau 1 project).
+    const allProjects = (await blogApi.fetchAllProjects()) || [];
 
     const baseUrl = "https://kew.stiestekom.ac.id";
 
@@ -56,6 +61,17 @@ export const GET: APIRoute = async () => {
     <priority>0.9</priority>
   </url>
   
+  <!-- Project Hub Pages -->
+  ${allProjects.length > 0
+            ? allProjects.map((project) => `
+  <url>
+    <loc>${baseUrl}/blog/koleksi/${slugify(project.name)}</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>`).join('')
+            : ''}
+
   <!-- Blog Categories -->
   ${categories && categories.length > 0
             ? categories.map((category) => `

@@ -1,0 +1,85 @@
+---
+import LayoutBlog from "@layouts/LayoutBlog.astro";
+import Breadcrumb from "@components/Breadcrumb.astro";
+import { BlogApi } from "@/services/blogApi";
+import { slugify } from "@/utils/slug";
+
+// Hub page per project.
+//
+// Tanpa halaman ini, hanya ~590 artikel (1 project terbaru, ~59 halaman
+// paginasi) yang punya jalur internal link, sementara sitemap memuat puluhan
+// ribu URL. Sisanya orphan: ditemukan Google lewat sitemap saja, tanpa sinyal
+// internal apa pun. Halaman ini melisting SELURUH artikel milik satu project
+// sehingga setiap URL di sitemap punya minimal satu tautan internal.
+//
+// Slug project memakai slugify(project.name), sama persis dengan yang dipakai
+// sitemap-[project].xml.ts agar URL-nya konsisten.
+const { project: projectParam } = Astro.params;
+
+const blogApi = new BlogApi();
+const projects = await blogApi.fetchAllProjects();
+
+const targetProject = projects?.find((p) => slugify(p.name) === projectParam);
+
+if (!targetProject) {
+    return Astro.redirect("/blog");
+}
+
+const contents = (await blogApi.fetchContentsByProject(targetProject)) || [];
+
+const breadcrumbs = [
+    { label: "Home", href: "/" },
+    { label: "Blog", href: "/blog" },
+    { label: targetProject.name, href: `/blog/koleksi/${projectParam}` },
+];
+
+const metaTags = {
+    title: `${targetProject.name} - Kumpulan Artikel`,
+    description:
+        targetProject.description ||
+        `Kumpulan ${contents.length} artikel dalam koleksi ${targetProject.name}.`,
+    keywords: targetProject.name,
+    image: targetProject.thumbnailUrl || "",
+};
+---
+
+<LayoutBlog metaTags={metaTags}>
+    <div class="max-w-screen-xl mx-auto px-4 py-8">
+        <Breadcrumb breadcrumbs={breadcrumbs} />
+
+        <header class="mb-10">
+            <h1 class="text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
+                {targetProject.name}
+            </h1>
+            {targetProject.description && (
+                <p class="text-gray-600 dark:text-gray-300 max-w-3xl">
+                    {targetProject.description}
+                </p>
+            )}
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                {contents.length} artikel
+            </p>
+        </header>
+
+        {contents.length > 0 ? (
+            <ul class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {contents.map((content) => (
+                    <li>
+                        <a
+                            href={`/${content.slug}`}
+                            class="block h-full p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all"
+                        >
+                            <span class="text-gray-900 dark:text-white font-medium line-clamp-2">
+                                {content.title}
+                            </span>
+                        </a>
+                    </li>
+                ))}
+            </ul>
+        ) : (
+            <p class="text-gray-600 dark:text-gray-300">
+                Belum ada artikel dalam koleksi ini.
+            </p>
+        )}
+    </div>
+</LayoutBlog>
